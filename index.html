@@ -2,16 +2,16 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026 马来西亚卡通地图行程单 🗺️✨</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>2026 马来西亚之行 🇲🇾</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #FF7043;
             --secondary: #4FC3F7;
-            --bg: #F0F9FF;
-            --text: #5D4037;
+            --white: #ffffff;
+            --bg: #f8fbff;
         }
 
         body, html {
@@ -19,168 +19,198 @@
             height: 100%; width: 100%;
             font-family: 'ZCOOL XiaoWei', cursive, sans-serif;
             background: var(--bg);
+            overflow: hidden; /* 防止整体滚动 */
         }
 
+        /* 顶部标题区 */
+        header {
+            height: 60px;
+            background: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 2px solid #eee;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: relative;
+            z-index: 1001;
+        }
+
+        header h1 { margin: 0; font-size: 1.2rem; color: var(--primary); }
+
+        /* 地图容器 - 全屏背景但留出底部 */
         #map {
-            height: 100vh;
+            height: 50vh;
             width: 100vw;
             z-index: 1;
         }
 
-        /* 浮动标题栏 */
-        .header-panel {
-            position: absolute;
-            top: 20px; left: 20px;
-            z-index: 1000;
-            background: white;
-            padding: 15px 25px;
-            border-radius: 25px;
-            border: 4px solid var(--secondary);
-            box-shadow: 6px 6px 0px rgba(79, 195, 247, 0.3);
-        }
-
-        h1 { margin:0; font-size: 1.5rem; color: var(--primary); }
-
-        /* 侧边行程栏 */
-        .info-panel {
-            position: absolute;
-            bottom: 20px; right: 20px;
-            width: 280px;
-            max-height: 60vh;
+        /* 下方滑动行程区 */
+        .scroller {
+            height: 50vh;
             overflow-y: auto;
-            z-index: 1000;
-            background: rgba(255, 255, 255, 0.95);
+            background: var(--white);
             padding: 20px;
-            border-radius: 30px;
-            border: 3px solid var(--primary);
-            backdrop-filter: blur(5px);
+            box-sizing: border-box;
+            border-top-left-radius: 30px;
+            border-top-right-radius: 30px;
+            margin-top: -30px;
+            position: relative;
+            z-index: 1000;
+            box-shadow: 0 -10px 20px rgba(0,0,0,0.05);
+            -webkit-overflow-scrolling: touch;
         }
 
-        .scroll-item {
+        .handle {
+            width: 40px;
+            height: 5px;
+            background: #ddd;
+            border-radius: 5px;
+            margin: -10px auto 15px auto;
+        }
+
+        .trip-card {
+            background: #fff;
             margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px dashed #ccc;
+            padding: 15px;
+            border-radius: 20px;
+            border: 2px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
         }
 
-        .scroll-item:last-child { border: none; }
-
-        .date-tag {
-            background: var(--secondary);
-            color: white;
-            padding: 2px 10px;
-            border-radius: 10px;
-            font-size: 12px;
+        .trip-card:active {
+            background: #f0f9ff;
+            border-color: var(--secondary);
         }
 
-        .item-title {
+        .card-icon {
+            font-size: 28px;
+            margin-right: 15px;
+            background: var(--bg);
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+        }
+
+        .card-info { flex: 1; }
+
+        .card-date {
+            font-size: 11px;
+            color: #999;
+            text-transform: uppercase;
+        }
+
+        .card-title {
             display: block;
             font-weight: bold;
-            margin-top: 5px;
             font-size: 16px;
+            color: #333;
         }
 
-        /* 地图自定义图标 */
-        .custom-div-icon {
-            background: transparent;
-            border: none;
+        .card-note {
+            font-size: 13px;
+            color: #666;
+            margin-top: 2px;
         }
 
+        /* 跳动的自定义地图图标 */
         .marker-emoji {
-            font-size: 32px;
-            text-shadow: 2px 2px 0px white;
+            font-size: 24px;
+            text-align: center;
             animation: bounce 2s infinite;
         }
 
         @keyframes bounce {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+            50% { transform: translateY(-7px); }
         }
 
-        /* 移动端适配 */
-        @media (max-width: 600px) {
-            .header-panel { width: 80%; left: 5%; top: 10px; text-align: center; }
-            .info-panel { width: 90%; left: 5%; bottom: 10px; right: auto; padding: 15px; }
-        }
+        .custom-div-icon { background:transparent; border:none; }
     </style>
 </head>
 <body>
 
-    <div class="header-panel">
-        <h1>🇲🇾 2026 马来西亚之行</h1>
-        <small>青岛 出发 · 卡通地图版 ✨</small>
-    </div>
-
-    <div class="info-panel" id="itinerary">
-        <!-- 内容由 JS 动态生成 -->
-    </div>
+    <header>
+        <h1>✈️ 2026 马来西亚之行</h1>
+    </header>
 
     <div id="map"></div>
 
+    <div class="scroller">
+        <div class="handle"></div>
+        <div id="card-list"></div>
+        <div style="text-align:center; padding: 20px; color: #ccc; font-size: 12px;">
+            OpenClaw | 祝你旅途愉快 ✨
+        </div>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // 初始化地图 聚焦马来西亚
-        var map = L.map('map', {
-            center: [4.2105, 101.9758], // 马来西亚中心点
-            zoom: 7,
-            zoomControl: false
-        });
-
-        // 使用卡通明快的底图
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-            attribution: 'OpenClaw ✨'
-        }).addTo(map);
-
         const tripData = [
-            { id: 1, pos: [36.0671, 120.3826], title: "青岛出发", date: "2月11日 21:15", emoji: "✈️", note: "起飞！越过星空飞向热带。" },
-            { id: 2, pos: [3.1319, 101.6841], title: "吉隆坡：莱恩酒店", date: "2月12-13日", emoji: "🏨", note: "Lion Hotel 接风洗尘。" },
-            { id: 3, pos: [5.4141, 100.3288], title: "槟城：深度游", date: "2月13-17日", emoji: "🍜", note: "入住槟城民宿，漫步老街。" },
-            { id: 4, pos: [3.15, 101.71], title: "吉隆坡：奥嘉德酒店", date: "2月17-18日", emoji: "🏢", note: "入住 Agode Hotel，购物走起。" },
-            { id: 5, pos: [2.1896, 102.2501], title: "马六甲：历史城", date: "2月18日", emoji: "🏛️", note: "包车南下，寻访红屋。" },
-            { id: 6, pos: [3.1319, 101.6841], title: "吉隆坡返程", date: "2月19日 04:35", emoji: "🛫", note: "满载南洋回忆飞回青岛。" }
+            { pos: [3.1319, 101.6841], title: "吉隆坡：莱恩酒店", date: "2/12 - 2/13", emoji: "🏨", note: "入住 Lion Hotel" },
+            { pos: [5.4141, 100.3288], title: "槟城：深度漫游", date: "2/13 - 2/17", emoji: "🍜", note: "古迹区民宿 & 美食" },
+            { pos: [3.1390, 101.6869], title: "吉隆坡：返回中转", date: "2/17 08:30", emoji: "🚌", note: "大巴返回吉隆坡" },
+            { pos: [3.1588, 101.7140], title: "吉隆坡：奥嘉德酒店", date: "2/17 - 2/18", emoji: "🏢", note: "入住 Agode Hotel" },
+            { pos: [2.1896, 102.2501], title: "马六甲：古城一日", date: "2/18", emoji: "🏛️", note: "历史遗迹探索" },
+            { pos: [3.1319, 101.6841], title: "吉隆坡：起飞回家", date: "2/19 04:35", emoji: "🛫", note: "KLIA 飞往青岛" }
         ];
 
-        // 渲染行程列表
-        const listDiv = document.getElementById('itinerary');
-        tripData.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'scroll-item';
-            div.innerHTML = `
-                <span class="date-tag">${item.date}</span>
-                <span class="item-title">${item.emoji} ${item.title}</span>
-                <small style="color:#666">${item.note}</small>
-            `;
-            listDiv.appendChild(div);
+        // 初始化地图
+        var map = L.map('map', {
+            zoomControl: false,
+            attributionControl: false,
+            dragging: true,
+            touchZoom: true
+        }).setView([4.21, 101.9], 7);
 
-            // 添加地图标注
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
+
+        const listContainer = document.getElementById('card-list');
+        const markers = [];
+
+        tripData.forEach((item, index) => {
+            // 添加列表卡片
+            const card = document.createElement('div');
+            card.className = 'trip-card';
+            card.innerHTML = `
+                <div class="card-icon">${item.emoji}</div>
+                <div class="card-info">
+                    <span class="card-date">${item.date}</span>
+                    <span class="card-title">${item.title}</span>
+                    <div class="card-note">${item.note}</div>
+                </div>
+            `;
+            // 点击卡片联动地图
+            card.onclick = () => {
+                map.flyTo(item.pos, 13, { duration: 1.5 });
+            };
+            listContainer.appendChild(card);
+
+            // 添加地图标记
             const icon = L.divIcon({
                 className: 'custom-div-icon',
                 html: `<div class="marker-emoji">${item.emoji}</div>`,
-                iconSize: [40, 40],
-                iconAnchor: [20, 20]
+                iconSize: [30, 30]
             });
 
-            L.marker(item.pos, {icon: icon}).addTo(map)
-             .bindPopup(`<b>${item.title}</b><br>${item.date}<br>${item.note}`);
+            const m = L.marker(item.pos, {icon: icon}).addTo(map);
+            markers.push(m);
         });
 
-        // 绘制行程路线 (虚线)
-        const lineStyles = { color: '#FF7043', weight: 4, dashArray: '10, 10', opacity: 0.8 };
-        
-        // 由于跨度较大，我们只连接马来西亚境内的核心点展示细节
-        const myPath = [
-            [3.1319, 101.6841], // KL
-            [5.4141, 100.3288], // Penang
-            [3.1319, 101.6841], // KL
-            [2.1896, 102.2501], // Malacca
-            [3.1319, 101.6841]  // KL Back
-        ];
-        L.polyline(myPath, lineStyles).addTo(map);
+        // 绘制轨迹线
+        const pathLine = L.polyline(tripData.map(d => d.pos), {
+            color: '#FF7043',
+            weight: 3,
+            dashArray: '8, 8',
+            opacity: 0.6
+        }).addTo(map);
 
-        // 为了美观，我们自动由于重点看大马，自动缩放至大马范围
-        map.fitBounds([
-            [2.18, 100.32],
-            [5.42, 102.25]
-        ], { padding: [50, 50] });
+        // 自动适配大马范围
+        map.fitBounds(pathLine.getBounds(), { padding: [50, 50] });
 
     </script>
 </body>
