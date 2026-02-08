@@ -3,237 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026 马来西亚之旅行程单 ✨</title>
+    <title>2026 马来西亚卡通地图行程单 🗺️✨</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>
         :root {
-            --sky-blue: #A7E9F7;
-            --soft-pink: #FFC9E2;
-            --lemon: #FFF9C4;
-            --leaf: #C8E6C9;
+            --primary: #FF7043;
+            --secondary: #4FC3F7;
+            --bg: #F0F9FF;
             --text: #5D4037;
         }
 
-        body {
-            background-color: #F0F9FF;
+        body, html {
+            margin: 0; padding: 0;
+            height: 100%; width: 100%;
             font-family: 'ZCOOL XiaoWei', cursive, sans-serif;
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            background-image: radial-gradient(#d1eefc 2px, transparent 2px);
-            background-size: 30px 30px;
+            background: var(--bg);
         }
 
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
+        #map {
+            height: 100vh;
+            width: 100vw;
+            z-index: 1;
         }
 
-        header {
-            text-align: center;
-            padding: 20px;
+        /* 浮动标题栏 */
+        .header-panel {
+            position: absolute;
+            top: 20px; left: 20px;
+            z-index: 1000;
             background: white;
+            padding: 15px 25px;
+            border-radius: 25px;
+            border: 4px solid var(--secondary);
+            box-shadow: 6px 6px 0px rgba(79, 195, 247, 0.3);
+        }
+
+        h1 { margin:0; font-size: 1.5rem; color: var(--primary); }
+
+        /* 侧边行程栏 */
+        .info-panel {
+            position: absolute;
+            bottom: 20px; right: 20px;
+            width: 280px;
+            max-height: 60vh;
+            overflow-y: auto;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
             border-radius: 30px;
-            border: 4px solid var(--sky-blue);
-            box-shadow: 8px 8px 0px var(--sky-blue);
-            margin-bottom: 40px;
+            border: 3px solid var(--primary);
+            backdrop-filter: blur(5px);
         }
 
-        h1 {
-            font-size: 24px;
-            margin: 0;
-            color: #E91E63;
+        .scroll-item {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #ccc;
         }
 
-        .timeline {
-            position: relative;
-            padding-left: 30px;
-        }
+        .scroll-item:last-child { border: none; }
 
-        .timeline::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 6px;
-            background: var(--soft-pink);
-            border-radius: 3px;
-        }
-
-        .event {
-            position: relative;
-            margin-bottom: 30px;
-            background: white;
-            padding: 20px;
-            border-radius: 20px;
-            border: 3px solid #eee;
-            transition: transform 0.2s;
-        }
-
-        .event:hover {
-            transform: scale(1.02);
-            border-color: var(--sky-blue);
-        }
-
-        .event::after {
-            content: '🦀';
-            position: absolute;
-            left: -48px;
-            top: 15px;
-            font-size: 24px;
-            background: #F0F9FF;
-            padding: 5px;
-        }
-
-        /* 个性化图标 */
-        .flight::after { content: '✈️'; }
-        .hotel::after { content: '🏨'; }
-        .car::after { content: '🚗'; }
-        .bus::after { content: '🚌'; }
-        .food::after { content: '🍜'; }
-
-        .date {
-            font-weight: bold;
-            color: #FF7043;
-            display: block;
-            margin-bottom: 5px;
-            font-size: 18px;
-        }
-
-        .title {
-            font-weight: bold;
-            font-size: 20px;
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        .details {
-            font-size: 16px;
-            color: #795548;
-            line-height: 1.5;
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 50px;
-            font-size: 14px;
-            color: #90A4AE;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 15px;
+        .date-tag {
+            background: var(--secondary);
+            color: white;
+            padding: 2px 10px;
+            border-radius: 10px;
             font-size: 12px;
-            margin-top: 10px;
-            background: var(--lemon);
         }
 
-        /* 卡通云朵 */
-        .cloud {
-            width: 100px;
-            position: fixed;
-            z-index: -1;
-            opacity: 0.5;
+        .item-title {
+            display: block;
+            font-weight: bold;
+            margin-top: 5px;
+            font-size: 16px;
+        }
+
+        /* 地图自定义图标 */
+        .custom-div-icon {
+            background: transparent;
+            border: none;
+        }
+
+        .marker-emoji {
+            font-size: 32px;
+            text-shadow: 2px 2px 0px white;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 600px) {
+            .header-panel { width: 80%; left: 5%; top: 10px; text-align: center; }
+            .info-panel { width: 90%; left: 5%; bottom: 10px; right: auto; padding: 15px; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>✈️ 2026 马来西亚旅游行程 <br><small>青岛 出发 · 完整版</small></h1>
-        </header>
 
-        <div class="timeline">
-            <!-- 去程 -->
-            <div class="event flight">
-                <span class="date">2月11日 - 2月12日</span>
-                <span class="title">青岛 ✈️ 马来西亚</span>
-                <p class="details">
-                    21:15 (Qingdao) — 03:35 (Kuala Lumpur)<br>
-                    跨越星空的深夜飞行，梦醒即到热带！
-                </p>
-                <div class="badge">国际航班</div>
-            </div>
-
-            <!-- 吉隆坡 1 -->
-            <div class="event hotel">
-                <span class="date">2月12日 - 2月13日</span>
-                <span class="title">吉隆坡：莱恩酒店</span>
-                <p class="details">
-                    入住 Lion Hotel<br>
-                    稍作整顿，迎接第一抹南洋阳光。
-                </p>
-                <div class="badge">吉隆坡段</div>
-            </div>
-
-            <!-- 吉隆坡 -> 槟城 -->
-            <div class="event car">
-                <span class="date">2月13日</span>
-                <span class="title">吉隆坡 🚗 槟城</span>
-                <p class="details">
-                    包车出行，一路向北！<br>
-                    沿途可以看热带棕榈林。
-                </p>
-                <div class="badge">包车旅行</div>
-            </div>
-
-            <!-- 槟城 -->
-            <div class="event hotel">
-                <span class="date">2月13日 - 2月17日</span>
-                <span class="title">槟城：深度漫游</span>
-                <p class="details">
-                    入住槟城民宿<br>
-                    寻找壁画、品尝炒粿条、感受海风。
-                </p>
-                <div class="badge">槟城段</div>
-            </div>
-
-            <!-- 槟城 -> 吉隆坡 -->
-            <div class="event bus">
-                <span class="date">2月17日 08:30</span>
-                <span class="title">槟城 🚌 吉隆坡</span>
-                <p class="details">
-                    乘坐舒适大巴返回吉隆坡。
-                </p>
-                <div class="badge">大巴出行</div>
-            </div>
-
-            <!-- 吉隆坡 + 马六甲 -->
-            <div class="event hotel">
-                <span class="date">2月17日 - 2月18日</span>
-                <span class="title">吉隆坡：奥嘉德酒店</span>
-                <p class="details">
-                    入住 Agode Hotel<br>
-                    第二站吉隆坡，购物与美食时间。
-                </p>
-            </div>
-
-            <div class="event car">
-                <span class="date">2月18日</span>
-                <span class="title">吉隆坡 🚗 马六甲</span>
-                <p class="details">
-                    包车往返马六甲，探寻历史古城。
-                </p>
-                <div class="badge">古城探索</div>
-            </div>
-
-            <!-- 返程 -->
-            <div class="event flight">
-                <span class="date">2月19日</span>
-                <span class="title">吉隆坡 ✈️ 青岛</span>
-                <p class="details">
-                    04:35 — 10:55<br>
-                    带着满满的回忆飞回家。
-                </p>
-                <div class="badge">顺利返程</div>
-            </div>
-        </div>
-
-        <div class="footer">
-            Designed with ✨ by OpenClaw | 2026
-        </div>
+    <div class="header-panel">
+        <h1>🇲🇾 2026 马来西亚之行</h1>
+        <small>青岛 出发 · 卡通地图版 ✨</small>
     </div>
+
+    <div class="info-panel" id="itinerary">
+        <!-- 内容由 JS 动态生成 -->
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // 初始化地图 聚焦马来西亚
+        var map = L.map('map', {
+            center: [4.2105, 101.9758], // 马来西亚中心点
+            zoom: 7,
+            zoomControl: false
+        });
+
+        // 使用卡通明快的底图
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: 'OpenClaw ✨'
+        }).addTo(map);
+
+        const tripData = [
+            { id: 1, pos: [36.0671, 120.3826], title: "青岛出发", date: "2月11日 21:15", emoji: "✈️", note: "起飞！越过星空飞向热带。" },
+            { id: 2, pos: [3.1319, 101.6841], title: "吉隆坡：莱恩酒店", date: "2月12-13日", emoji: "🏨", note: "Lion Hotel 接风洗尘。" },
+            { id: 3, pos: [5.4141, 100.3288], title: "槟城：深度游", date: "2月13-17日", emoji: "🍜", note: "入住槟城民宿，漫步老街。" },
+            { id: 4, pos: [3.15, 101.71], title: "吉隆坡：奥嘉德酒店", date: "2月17-18日", emoji: "🏢", note: "入住 Agode Hotel，购物走起。" },
+            { id: 5, pos: [2.1896, 102.2501], title: "马六甲：历史城", date: "2月18日", emoji: "🏛️", note: "包车南下，寻访红屋。" },
+            { id: 6, pos: [3.1319, 101.6841], title: "吉隆坡返程", date: "2月19日 04:35", emoji: "🛫", note: "满载南洋回忆飞回青岛。" }
+        ];
+
+        // 渲染行程列表
+        const listDiv = document.getElementById('itinerary');
+        tripData.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'scroll-item';
+            div.innerHTML = `
+                <span class="date-tag">${item.date}</span>
+                <span class="item-title">${item.emoji} ${item.title}</span>
+                <small style="color:#666">${item.note}</small>
+            `;
+            listDiv.appendChild(div);
+
+            // 添加地图标注
+            const icon = L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div class="marker-emoji">${item.emoji}</div>`,
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            });
+
+            L.marker(item.pos, {icon: icon}).addTo(map)
+             .bindPopup(`<b>${item.title}</b><br>${item.date}<br>${item.note}`);
+        });
+
+        // 绘制行程路线 (虚线)
+        const lineStyles = { color: '#FF7043', weight: 4, dashArray: '10, 10', opacity: 0.8 };
+        
+        // 由于跨度较大，我们只连接马来西亚境内的核心点展示细节
+        const myPath = [
+            [3.1319, 101.6841], // KL
+            [5.4141, 100.3288], // Penang
+            [3.1319, 101.6841], // KL
+            [2.1896, 102.2501], // Malacca
+            [3.1319, 101.6841]  // KL Back
+        ];
+        L.polyline(myPath, lineStyles).addTo(map);
+
+        // 为了美观，我们自动由于重点看大马，自动缩放至大马范围
+        map.fitBounds([
+            [2.18, 100.32],
+            [5.42, 102.25]
+        ], { padding: [50, 50] });
+
+    </script>
 </body>
 </html>
